@@ -1,0 +1,87 @@
+import ghpythonlib.components as gc
+import Rhino.Geometry as rg
+import scriptcontext as sc
+import math
+
+
+def getIntersectionPoints(curveA, curveB):
+    tol = sc.doc.ModelAbsoluteTolerance
+    FA, EA, VA = gc.DeconstructBrep(curveA)
+    FB, EB, VB = gc.DeconstructBrep(curveB)
+    
+    interPoints = []
+    R = 1
+    
+    for i in range(0,len(VA)):
+        for j in range(0,len(VB)):
+            if gc.Distance(VA[i],VB[j])<tol:
+                
+                circleA = rg.Circle(VA[i], R)
+                AreaA, centroidA = gc.Area(gc.RegionIntersection(circleA, curveA))
+                AreaB, centroidB = gc.Area(gc.RegionIntersection(circleA, curveB))
+                
+                if abs(AreaA + AreaB - math.pi*R*R) > tol:
+                    interPoints.append(VA[i])
+                break
+                
+    return interPoints
+
+
+def getIntermiddlePoints(points,d,myZ):
+    a = points[0]
+    b = points[1]
+    
+    if a.X-b.X == 0:
+        p1 = rg.Point3d(a.X+d,(a.Y+b.Y)/2,myZ)
+        p2 = rg.Point3d(a.X-d,(a.Y+b.Y)/2,myZ)
+        
+    else:
+        k = (a.Y-b.Y)/(a.X-b.X)
+        
+        x0 = (a.X + b.X)/2
+        y0 = (a.Y + b.Y)/2
+        
+        myX0 = x0+k*d*(math.sqrt(1/(k*k+1)))
+        myY0 = y0-d*(math.sqrt(1/(k*k+1)))
+        
+        myX1 = x0-k*d*(math.sqrt(1/(k*k+1)))
+        myY1 = y0+d*(math.sqrt(1/(k*k+1)))
+        
+        p1 = rg.Point3d(myX0,myY0,myZ)
+        p2 = rg.Point3d(myX1,myY1,myZ)
+    return p1,p2
+
+def isPointInsideBrep(point, brep):
+    point_temp1 = rg.Point3d(point.X, point.Y, point.Z+20)
+    point_temp2 = rg.Point3d(point.X, point.Y, point.Z-20)
+    line_temp = rg.Line(point_temp1,point_temp2)
+    
+    interCurve, points = gc.BrepXLine(brep,line_temp)
+    if points!= None:
+        return True
+    else:
+        return False
+
+
+allinter = []
+allIntermiddlePoints = []
+QRcodes = []
+
+if run:
+    myZ = corridor.Vertices[0].Location.Z
+    d = 1 # a QR code is 1 meter away from a door
+    
+    for i in range(0,len(rooms)):
+        interPoints = getIntersectionPoints(corridor, rooms[i])
+        if len(interPoints)>1:#!=0
+            allinter.append(interPoints[0])
+            allinter.append(interPoints[1])
+            p1,p2 = getIntermiddlePoints(interPoints,d,myZ)
+            
+            allIntermiddlePoints.append(p1)
+            allIntermiddlePoints.append(p2)
+            
+            if isPointInsideBrep(p1, rooms[i]):
+                QRcodes.append(p2)
+            else:
+                QRcodes.append(p1)
