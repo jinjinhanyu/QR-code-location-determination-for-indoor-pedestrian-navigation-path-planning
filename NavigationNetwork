@@ -1,0 +1,240 @@
+def createBooleanIntersection(curveA, curveB):
+    #curveA is a brep or enclosed polyline
+    #curveB is a curve, brep, or enclosed polyline
+    points, params_a, params_b = gc.CurveXCurve(gc.JoinCurves(curveA,False),gc.JoinCurves(curveB,False))
+    if isinstance(points, list):
+        intersections = []
+        mydirection = rg.Vector3d(0,0,1)
+        brepA = gc.BoundarySurfaces(curveA)
+        curves_B = curveB.DuplicateSegments()
+        
+        for cb in curves_B:
+            overlaps = rg.Curve.ProjectToBrep(gc.JoinCurves(cb,False),brepA,mydirection,0.01)
+            if len(overlaps)!=0:
+                for ol in overlaps:
+                    intersections.append(ol)
+
+        return intersections
+    else:
+        return None
+
+def networkDerivation(QRtagsOri,QRTagOriAttri,QRTagAddAttri,QRtagsAdd,shops,otherSpaces,shopAttri):
+
+    Links = []
+    Nodes = []
+    allNodes = []
+    
+    Network = []
+    NodeDic = []
+    
+    QRtags = QRtagsOri + QRtagsAdd
+    Spaces = shops + otherSpaces
+    QRTagAttri = QRTagOriAttri + QRTagAddAttri
+    
+    Attri = []
+    for i in range(0,int(len(shopAttri)/6)):
+        if shopAttri[6*i+1] == '':
+            Attri.append('Shop_L'+str(level)+'_'+str(i))
+        else:
+            Attri.append(shopAttri[6*i+1])
+    print len(Attri)
+    print len(shops)
+    print Attri
+    print len(QRtags)
+    print len(QRTagAttri)
+    
+    for i in range(0,len(otherSpaces)):
+        Attri.append('Corridor_L'+str(level)+'_'+str(i))
+        """
+        for j in range(0,len(QRtags)):
+            if str(otherSpaces[i].Contains(QRtags[j])) == 'Inside':
+                if QRTagAttri[5*j+1]:
+                    print QRTagAttri[5*j+1], '---', i, '----------', j
+                    Attri.append(QRTagAttri[5*j+1])
+                    
+                else:
+                    Attri.append('Corridor_L'+str(level)+'_'+str(i))
+                    print 'i=', i
+                    """
+    #for i in range(len(QRtagsOri), len(otherSpaces)):
+
+    print len(otherSpaces)
+    print len(Attri)-57
+    
+    print Attri
+    
+    
+    flag2QRtags = [0]*len(QRtags)
+    for i in range(0,len(Spaces)):
+        flag = 0
+        for j in range(0,len(QRtags)):
+            if str(Spaces[i].Contains(QRtags[j])) == 'Inside':
+                Nodes.append(QRtags[j])
+
+                if j < int(len(QRTagAttri)/5):
+                    if QRTagAttri[5*j+1]:
+                        NodeDic.append(QRTagAttri[5*j+1])
+                    else:
+                        NodeDic.append(Attri[i])
+                    NodeDic.append(QRtags[j])
+                
+                else:
+                    NodeDic.append(Attri[i])
+                    NodeDic.append(QRtags[j])
+                
+                flag2QRtags[j] = 1
+                flag = 1
+                break
+        if flag == 0:
+            area, centroid = gc.Area(Spaces[i])
+            Nodes.append(centroid)
+            
+            NodeDic.append(Attri[i])
+            NodeDic.append(centroid)
+
+    for i in range(0,len(Spaces)):
+        for j in range(i+1,len(Spaces)):
+            inter = createBooleanIntersection(Spaces[i], Spaces[j])
+            if inter != None and len(inter)!=0:
+                Links.append(gc.Line(Nodes[i],Nodes[j]))
+                distance_ij = gc.Distance(Nodes[i],Nodes[j])
+                edge_ij = make_edge(Attri[i], Attri[j], distance_ij)
+                edge_ji = make_edge(Attri[j], Attri[i], distance_ij)
+                Network.append(edge_ij)
+                Network.append(edge_ji)
+                    
+    
+    return Links, Nodes, Network, NodeDic
+
+def createAttri_NodeDic(shops, otherSpaces, QRtagsOri, QRTagOriAttri, QRtagsAdd, QRTagAddAttri, walls):
+    
+    QRtags = QRtagsOri + QRtagsAdd
+    Spaces = shops + otherSpaces
+
+    QRTagAttri = QRTagOriAttri + QRTagAddAttri
+    
+    NodeDic = []
+    Nodes = []
+    Attri = []
+
+    for i in range(0,len(shops)):
+        if shopAttri[6*i+1]:
+            Attri.append(shopAttri[6*i+1])
+            
+            area, centroid = gc.Area(shops[i])
+            NodeDic.append(shopAttri[6*i+1])
+            NodeDic.append(centroid)
+            Nodes.append(centroid)
+            
+        else:
+            Attri.append('Shop_L'+str(level)+'_'+str(i))
+            
+            area, centroid = gc.Area(shops[i])
+            NodeDic.append('Shop_L'+str(level)+'_'+str(i))
+            NodeDic.append(centroid)
+            Nodes.append(centroid)
+    
+    for i in range(0,len(otherSpaces)):
+        flag_Inside =0
+        for j in range(0,len(QRtags)):
+            if str(otherSpaces[i].Contains(QRtags[j])) == 'Inside':
+                flag_Inside =1
+                Nodes.append(QRtags[j])
+                
+                if QRTagAttri[5*j+1]:
+                    Attri.append(QRTagAttri[5*j+1])
+                    
+                    NodeDic.append(QRTagAttri[5*j+1])
+                    NodeDic.append(QRtags[j])
+                    
+                    break
+                else:
+                    Attri.append('Corridor_L'+str(level)+'_'+str(i))
+                    
+                    NodeDic.append('Corridor_L'+str(level)+'_'+str(i))
+                    NodeDic.append(QRtags[j])
+                    
+                    break
+        if flag_Inside == 0:
+            
+            Attri.append('Corridor_L'+str(level)+'_'+str(i))
+            
+            area, centroid = gc.Area(otherSpaces[i])
+            NodeDic.append('Corridor_L'+str(level)+'_'+str(i))
+            NodeDic.append(centroid)
+            Nodes.append(centroid)
+    
+    # Network derivation
+    
+    def removeEdge(myEdge):
+        allP = []
+        for p in range(0,len(walls)):
+            points, params_a, params_b = gc.CurveXCurve(myEdge,walls[p])
+            if points != None:
+                allP.append(points)
+                break
+        if len(allP)==0:
+            return False
+        else:
+            return True
+    
+    Links = []
+    Network = []
+
+    myNodeDict = {}
+    for i in range (0,int(len(NodeDic)/2)):
+        myNodeDict[NodeDic[2*i]] = NodeDic[2*i+1]
+
+    for i in range(0,len(Spaces)):
+        for j in range(i+1,len(Spaces)):
+            inter = createBooleanIntersection(Spaces[i], Spaces[j])
+            if inter != None and len(inter)!=0:
+                
+                isShop_i = 1
+                isShop_j = 1
+                if 'Corridor_L' in Attri[i] or 'Bench' in Attri[i] or 'ATM' in Attri[i] or 'Escalator' in Attri[i]: 
+                    isShop_i = 0
+                if 'Corridor_L' in Attri[j] or 'Bench' in Attri[j] or 'ATM' in Attri[j] or 'Escalator' in Attri[i]:
+                    isShop_j = 0
+                
+                if isShop_i == 1 or isShop_j == 1:
+                    inter_start = inter[0].PointAtStart
+                    inter_end = inter[0].PointAtEnd
+                    midPoint = (inter_start+inter_end)/2
+                    
+                    link_i2midPoint = gc.Line(Nodes[i],midPoint)
+                    link_midPoint2j = gc.Line(midPoint,Nodes[j])
+                    
+                    Links.append(link_i2midPoint)
+                    Links.append(link_midPoint2j)
+                    
+                    distance_i_midPoint = gc.Distance(Nodes[i],midPoint)
+                    distance_j_midPoint = gc.Distance(Nodes[j],midPoint)
+                    
+                    
+                    edge_i_midPoint = make_edge(Attri[i], 'Door_'+Attri[i]+'_'+Attri[j], distance_i_midPoint)
+                    edge_midPoint_i = make_edge('Door_'+Attri[i]+'_'+Attri[j], Attri[i], distance_i_midPoint)
+                    edge_j_midPoint = make_edge(Attri[j], 'Door_'+Attri[i]+'_'+Attri[j], distance_j_midPoint)
+                    edge_midPoint_j = make_edge('Door_'+Attri[i]+'_'+Attri[j], Attri[j], distance_j_midPoint)
+                    
+                    Network.append(edge_i_midPoint)
+                    Network.append(edge_midPoint_i)
+                    Network.append(edge_j_midPoint)
+                    Network.append(edge_midPoint_j)
+                    
+                    NodeDic.append('Door_'+Attri[i]+'_'+Attri[j])
+                    NodeDic.append(midPoint)
+                    
+                else:
+                    myEdge = gc.Line(Nodes[i],Nodes[j])
+                    if not removeEdge(myEdge):
+                        Links.append(myEdge)
+                        distance_ij = gc.Distance(Nodes[i],Nodes[j])
+                        edge_ij = make_edge(Attri[i], Attri[j], distance_ij)
+                        edge_ji = make_edge(Attri[j], Attri[i], distance_ij)
+                        Network.append(edge_ij)
+                        Network.append(edge_ji)    
+    return Attri, NodeDic, Nodes, Links, Network
+    
+if run:
+    Attri, NodeDic, Nodes, Links, Network = createAttri_NodeDic(shops, otherSpaces, QRtagsOri, QRTagOriAttri, QRtagsAdd, QRTagAddAttri, walls)
