@@ -10,7 +10,7 @@ The shops, toilets, escalators, stairs, and lifts are included in the layer name
 
 Each element in each layer has three attributes: {ID, name, category}. 
 
-ID records the id of each element, name keeps the semantic of the element (e.g., "Coles", "EscalatorL5_L4", "ToiletA_L5", "ATM_A_L5"), while category records the supplement information, for instance, the category of the shop named ``Kidstuff", is ``Books, stationary and gifts, Entertainment and activities, Sporting goods stores, Toys and hobbies stores".
+ID records the id of each element, name keeps the semantic of the element (e.g., "Coles", "EscalatorL5_L4", "ToiletA_L5", "ATM_A_L5"), while category records the supplement information, for instance, the category of the shop named "Kidstuff", is "Books, stationary and gifts, Entertainment and activities, Sporting goods stores, Toys and hobbies stores".
 
 QR code location determination is used for computing the locations of QR codes.
 Location determination of Dummy nodes is designed for determining the locations of dummy nodes.
