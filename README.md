@@ -3,7 +3,7 @@ Two software packages were employed in this implementation: Quantum GIS (QGIS) a
 
 In the whole process, QGIS is used to edit the indoor maps, including adding attributes, setting the coordinate system, and editing footprints of indoor elements. 
 
-Rhinoceros (with Grasshopper) is used to process the entire procedures of ITSP path planning, and the whole data process is developed in Python script. 
+Rhinoceros (with Grasshopper) is used to process the entire procedures of FD-path planning, and the whole data process is developed in Python script. 
 
 By using QGIS, we edit the floor plan into four shapefile layers, including rooms, corridors, atriums, and POIs, in which except for the POIs, all other spaces are polygons. 
 The shops, toilets, escalators, stairs, and lifts are included in the layer named Rooms, while the ATM and Bench are edited in POIs layer. Atriums and corridors are edited in two separated layers named Atriums and Corridor.
